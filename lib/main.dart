@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:webview_flutter/webview_flutter.dart';
 
 void main() {
   runApp(const MaterialApp(
@@ -88,38 +89,18 @@ class SecondRoute extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    WebViewController? _controller;
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('CM Tool'),
-      ),
-      body: Center(
-        child: Padding(
-            padding: const EdgeInsets.all(10),
-            child: ListView(
-              children: <Widget>[
-                Container(
-                    alignment: Alignment.center,
-                    padding: const EdgeInsets.all(10),
-                    child: const Text(
-                      'CM Tool Managemant',
-                      style: TextStyle(
-                          color: Colors.blue,
-                          fontWeight: FontWeight.w500,
-                          fontSize: 30),
-                    )),
-                Container(
-                    height: 50,
-                    margin: const EdgeInsets.fromLTRB(0, 10, 0, 0),
-                    padding: const EdgeInsets.fromLTRB(10, 0, 10, 0),
-                    child: ElevatedButton(
-                      child: const Text('Log out'),
-                      onPressed: () {
-                        Navigator.pop(context);
-                      },
-                    )),
-              ],
-            )),
-      ),
-    );
+        appBar: AppBar(
+          title: Text("CM Tool Management"),
+        ),
+        body: WebView(
+          zoomEnabled: false,
+          initialUrl: "https://staging-eazypos-cms.devfullteam.tech/",
+          javascriptMode: JavascriptMode.unrestricted,
+          onWebViewCreated: (WebViewController webViewController) {
+            _controller = webViewController;
+          },
+        ));
   }
 }
