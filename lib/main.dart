@@ -1,9 +1,9 @@
+// ignore_for_file: use_build_context_synchronously
+
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:http/http.dart' as http;
-import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 
 void main() {
   runApp(const MaterialApp(
@@ -17,11 +17,11 @@ class FirstRoute extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final _formKey = GlobalKey<FormState>();
+    final formKey = GlobalKey<FormState>();
     TextEditingController nameController = TextEditingController();
     TextEditingController passwordController = TextEditingController();
     return Form(
-        key: _formKey,
+        key: formKey,
         child: Scaffold(
           appBar: AppBar(
             title: const Text('Login'),
@@ -127,7 +127,6 @@ class FirstRoute extends StatelessWidget {
 
                                 var statusCode = response.statusCode;
                                 var responseBody = response.body;
-                                print("save-auth-session: " + responseBody);
                                 if (statusCode == 200) {
                                   final responseBodyObj =
                                       json.decode(responseBody);
@@ -191,14 +190,15 @@ class SecondRoute extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     WebViewController? _controller;
-    print("SecondRoute: " + token.accessToken);
     return Scaffold(
         appBar: AppBar(
-          title: Text("CM Tool Management"),
+          title: const Text("CM Tool Management"),
         ),
         body: WebView(
           zoomEnabled: false,
-          initialUrl: "https://staging-eazypos-cms.devfullteam.tech/",
+          initialUrl:
+              "https://staging-eazypos-cms.devfullteam.tech/session-auth?session_id=" +
+                  token.accessToken,
           javascriptMode: JavascriptMode.unrestricted,
           onWebViewCreated: (WebViewController webViewController) {
             _controller = webViewController;
