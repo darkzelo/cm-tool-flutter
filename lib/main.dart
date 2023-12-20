@@ -1,9 +1,13 @@
 // ignore_for_file: use_build_context_synchronously
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:otp_text_field/style.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:otp_text_field/otp_text_field.dart';
+import 'constants.dart' as Constants;
 
 void main() {
   runApp(const MaterialApp(
@@ -17,6 +21,12 @@ class Token {
   const Token(this.accessToken);
 }
 
+class OtpDetail {
+  final String mobileNo;
+  final String refCode;
+  const OtpDetail(this.mobileNo, this.refCode);
+}
+
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
 
@@ -24,23 +34,19 @@ class HomePage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        automaticallyImplyLeading: false,
         title: const Text('App Manager'),
       ),
-      body: Center(
+      body: const Center(
         child: LoginUsernamePage(),
       ),
     );
   }
 }
 
-class LoginUsernamePage extends StatefulWidget {
+class LoginUsernamePage extends StatelessWidget {
   const LoginUsernamePage({super.key});
 
-  @override
-  State<LoginUsernamePage> createState() => _LoginUsernamePageState();
-}
-
-class _LoginUsernamePageState extends State<LoginUsernamePage> {
   @override
   Widget build(BuildContext context) {
     return Padding(
@@ -51,7 +57,7 @@ class _LoginUsernamePageState extends State<LoginUsernamePage> {
                 alignment: Alignment.center,
                 padding: const EdgeInsets.all(10),
                 child: const Text(
-                  'CM Tool Managemant',
+                  Constants.PAGE_HEADER,
                   style: TextStyle(
                       color: Colors.blue,
                       fontWeight: FontWeight.w500,
@@ -65,7 +71,7 @@ class _LoginUsernamePageState extends State<LoginUsernamePage> {
                 alignment: Alignment.center,
                 padding: const EdgeInsets.all(10),
                 child: const Text(
-                  'หรือ',
+                  Constants.OR,
                   style: TextStyle(fontSize: 16),
                 )),
             Container(
@@ -77,7 +83,7 @@ class _LoginUsernamePageState extends State<LoginUsernamePage> {
                     backgroundColor: Colors.blue,
                     foregroundColor: Colors.white,
                   ),
-                  child: const Text('ลงชื่อเข้าใช้ด้วย OTP'),
+                  child: const Text(Constants.LOGIN_WITH_OTP),
                   onPressed: () async {
                     Navigator.push(
                       context,
@@ -154,96 +160,94 @@ class _LoginUsernameFormWidgetState extends State<LoginUsernameFormWidget> {
                   backgroundColor: Colors.blue,
                   foregroundColor: Colors.white,
                 ),
-                child: const Text('ลงชื่อเข้าใช้'),
+                child: const Text(Constants.LOGIN_WITH_USERNAME),
                 onPressed: () async {
-                  if (_formKey.currentState!.validate()) {
-                    // ScaffoldMessenger.of(context).showSnackBar(
-                    //   const SnackBar(content: Text('Processing Data')),
-                    // );
-
-                    Map data = {
-                      "client_id": "test",
-                      "client_secret": "test",
-                      "grant_type": "password",
-                      "password": passwordController.text,
-                      "username": nameController.text
-                    };
-                    //encode Map to JSON
-                    var body = json.encode(data);
-                    var url = Uri.https('staging-pos-api.devfullteam.tech',
-                        'staff-service/OAuth/token');
-                    var response = await http.post(url,
-                        headers: {"Content-Type": "application/json"},
-                        body: body);
-
-                    var statusCode = response.statusCode;
-                    var responseBody = response.body;
-
-                    if (statusCode == 200) {
-                      final responseBodyObj = json.decode(responseBody);
-                      if (responseBodyObj["access_token"] != "") {
-                        var accessToken = responseBodyObj["access_token"];
-                        Map data = {
-                          "token": accessToken,
-                        };
-                        //encode Map to JSON
-                        var body = json.encode(data);
-                        var url = Uri.https('staging-pos-api.devfullteam.tech',
-                            'staff-service/user/save-auth-session');
-
-                        var response = await http.post(url,
-                            headers: {
-                              "Content-Type": "application/json",
-                              'Authorization': "Bearer " + accessToken
-                            },
-                            body: body);
-
-                        var statusCode = response.statusCode;
-                        var responseBody = response.body;
-                        if (statusCode == 200) {
-                          final responseBodyObj = json.decode(responseBody);
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => WebViewPage(
-                                  token: Token(responseBodyObj["session_id"])),
-                            ),
-                          );
-                        } else {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                                content:
-                                    Text('Incorrect username or password')),
-                          );
-                        }
-
-                        // Navigator.push(
-                        //   context,
-                        //   MaterialPageRoute(
-                        //     builder: (context) => WebViewPage(
-                        //         token: Token(
-                        //             responseBodyObj["access_token"])),
-                        //   ),
-                        // );
-                      } else {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                              content: Text('Incorrect username or password')),
-                        );
-                      }
-                    } else {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                            content: Text('Incorrect username or password')),
-                      );
-                    }
-                  }
+                  callLogin(nameController.text, passwordController.text);
                 },
               )),
         ],
       ),
     );
-    ;
+  }
+
+  void callLogin(String username, String password) async {
+    if (_formKey.currentState!.validate()) {
+      // ScaffoldMessenger.of(context).showSnackBar(
+      //   const SnackBar(content: Text('Processing Data')),
+      // );
+
+      Map data = {
+        "client_id": "test",
+        "client_secret": "test",
+        "grant_type": "password",
+        "password": password,
+        "username": username
+      };
+      //encode Map to JSON
+      var body = json.encode(data);
+      var url = Uri.https(
+          'staging-pos-api.devfullteam.tech', 'staff-service/OAuth/token');
+      var response = await http.post(url,
+          headers: {"Content-Type": "application/json"}, body: body);
+
+      var statusCode = response.statusCode;
+      var responseBody = response.body;
+
+      if (statusCode == 200) {
+        final responseBodyObj = json.decode(responseBody);
+        if (responseBodyObj["access_token"] != "") {
+          var accessToken = responseBodyObj["access_token"];
+          Map data = {
+            "token": accessToken,
+          };
+          //encode Map to JSON
+          var body = json.encode(data);
+          var url = Uri.https(
+              Constants.API_ENDPOINT, 'staff-service/user/save-auth-session');
+
+          var response = await http.post(url,
+              headers: {
+                "Content-Type": "application/json",
+                'Authorization': 'Bearer $accessToken'
+              },
+              body: body);
+
+          var statusCode = response.statusCode;
+          var responseBody = response.body;
+          if (statusCode == 200) {
+            final responseBodyObj = json.decode(responseBody);
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) =>
+                    WebViewPage(token: Token(responseBodyObj["session_id"])),
+              ),
+            );
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Incorrect username or password')),
+            );
+          }
+
+          // Navigator.push(
+          //   context,
+          //   MaterialPageRoute(
+          //     builder: (context) => WebViewPage(
+          //         token: Token(
+          //             responseBodyObj["access_token"])),
+          //   ),
+          // );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Incorrect username or password')),
+          );
+        }
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Incorrect username or password')),
+        );
+      }
+    }
   }
 }
 
@@ -255,6 +259,8 @@ class WebViewPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     WebViewController? _controller;
+    String accessToken = token.accessToken;
+    String webviewEndpoint = Constants.WEBVIEW_ENDPOINT;
     return Scaffold(
       appBar: AppBar(
         title: const Text("CM Tool Management"),
@@ -262,9 +268,7 @@ class WebViewPage extends StatelessWidget {
       ),
       body: WebView(
         zoomEnabled: false,
-        initialUrl:
-            "https://staging-eazypos-cms.devfullteam.tech/session-auth?session_id=" +
-                token.accessToken,
+        initialUrl: '$webviewEndpoint/session-auth?session_id=$accessToken',
         javascriptMode: JavascriptMode.unrestricted,
         onWebViewCreated: (WebViewController webViewController) {
           _controller = webViewController;
@@ -294,7 +298,6 @@ class LoginMobileNoPage extends StatelessWidget {
         appBar: AppBar(
           title: const Text("App Manager"),
         ),
-        //  body: Center(child: LoginMobileNoFormWidget()));
         body: Padding(
             padding: const EdgeInsets.all(10),
             child: ListView(children: <Widget>[
@@ -302,7 +305,7 @@ class LoginMobileNoPage extends StatelessWidget {
                   alignment: Alignment.center,
                   padding: const EdgeInsets.all(10),
                   child: const Text(
-                    'CM Tool Managemant',
+                    Constants.PAGE_HEADER,
                     style: TextStyle(
                         color: Colors.blue,
                         fontWeight: FontWeight.w500,
@@ -316,7 +319,7 @@ class LoginMobileNoPage extends StatelessWidget {
                   alignment: Alignment.center,
                   padding: const EdgeInsets.all(10),
                   child: const Text(
-                    'หรือ',
+                    Constants.OR,
                     style: TextStyle(fontSize: 16),
                   )),
               Container(
@@ -364,16 +367,21 @@ class _LoginMobileNoFormWidgetState extends State<LoginMobileNoFormWidget> {
               padding: const EdgeInsets.all(10),
               child: TextFormField(
                 controller: mobileNoController,
+                keyboardType: TextInputType.number,
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                 validator: (value) {
                   if (value == null || value.isEmpty) {
                     return 'กรุณากรอกหมายเลขโทรศัพท์';
                   }
+                  if (value.length != 9 && value.length != 10) {
+                    return 'รูปแบบหมายเลขโทรศัพท์ไม่ถูกต้อง';
+                  }
                   return null;
                 },
                 decoration: const InputDecoration(
-                  border: OutlineInputBorder(),
-                  labelText: 'หมายเลขโทรศัพท์',
-                ),
+                    border: OutlineInputBorder(),
+                    labelText: 'หมายเลขโทรศัพท์',
+                    prefixText: "+66"),
               )),
           Container(
               height: 50,
@@ -383,8 +391,13 @@ class _LoginMobileNoFormWidgetState extends State<LoginMobileNoFormWidget> {
               child: ElevatedButton(
                   onPressed: () {
                     if (_formKey.currentState!.validate()) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Processing Data')),
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => OtpPage(
+                            otpDetail: OtpDetail(mobileNoController.text, ""),
+                          ),
+                        ),
                       );
                     }
                   },
@@ -396,5 +409,123 @@ class _LoginMobileNoFormWidgetState extends State<LoginMobileNoFormWidget> {
         ],
       ),
     );
+  }
+}
+
+class OtpPage extends StatelessWidget {
+  const OtpPage({super.key, required this.otpDetail});
+  final OtpDetail otpDetail;
+
+  @override
+  Widget build(BuildContext context) {
+    String mobileNo = otpDetail.mobileNo;
+    String refCode = otpDetail.refCode;
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text("App Manager"),
+      ),
+      body: Padding(
+          padding: const EdgeInsets.all(10),
+          child: ListView(children: <Widget>[
+            Container(
+                alignment: Alignment.center,
+                padding: const EdgeInsets.all(10),
+                child: const Text(
+                  Constants.PAGE_HEADER,
+                  style: TextStyle(
+                      color: Colors.blue,
+                      fontWeight: FontWeight.w500,
+                      fontSize: 30),
+                )),
+            Container(
+                alignment: Alignment.center,
+                padding: const EdgeInsets.all(10),
+                child: const Text(
+                  'ยืนยันรหัส OTP',
+                  style: TextStyle(
+                      color: Colors.black,
+                      fontWeight: FontWeight.w500,
+                      fontSize: 20),
+                )),
+            Container(
+                alignment: Alignment.center,
+                child: Text(
+                  'รหัสยืนยันส่งไปที่ +66$mobileNo',
+                  style: const TextStyle(
+                      color: Colors.grey,
+                      fontWeight: FontWeight.w400,
+                      fontSize: 15),
+                )),
+            Container(
+                alignment: Alignment.center,
+                child: Text(
+                  'Ref Code: $refCode',
+                  style: const TextStyle(
+                      color: Colors.grey,
+                      fontWeight: FontWeight.w400,
+                      fontSize: 15),
+                )),
+            Container(
+                alignment: Alignment.center,
+                padding: const EdgeInsets.all(10),
+                child: OtpFormWidget(
+                  otpDetail: OtpDetail(otpDetail.mobileNo, otpDetail.refCode),
+                ))
+          ])),
+    );
+  }
+}
+
+class OtpFormWidget extends StatefulWidget {
+  const OtpFormWidget({super.key, required this.otpDetail});
+  final OtpDetail otpDetail;
+
+  @override
+  State<OtpFormWidget> createState() => _OtpFormWidgetState();
+}
+
+class _OtpFormWidgetState extends State<OtpFormWidget> {
+  final _formKey = GlobalKey<FormState>();
+  @override
+  Widget build(BuildContext context) {
+    OtpFieldController otpController = OtpFieldController();
+    return Form(
+        key: _formKey,
+        child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Container(
+                padding: const EdgeInsets.all(10),
+                child: OTPTextField(
+                    controller: otpController,
+                    length: 6,
+                    width: MediaQuery.of(context).size.width,
+                    textFieldAlignment: MainAxisAlignment.spaceAround,
+                    fieldWidth: 45,
+                    fieldStyle: FieldStyle.box,
+                    outlineBorderRadius: 10,
+                    style: TextStyle(fontSize: 17),
+                    onChanged: (pin) {
+                      print("change" + pin);
+                    },
+                    onCompleted: (pin) {
+                      print("complete" + pin);
+                    }),
+              ),
+              Container(
+                  height: 50,
+                  width: double.infinity,
+                  margin: const EdgeInsets.fromLTRB(0, 10, 0, 0),
+                  padding: const EdgeInsets.fromLTRB(10, 0, 10, 0),
+                  child: ElevatedButton(
+                      onPressed: () {
+                        print("Resend OTP");
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.white,
+                        foregroundColor: Colors.blue,
+                      ),
+                      child: const Text('ส่งรหัสยืนยันอีกครั้ง')))
+            ]));
   }
 }
