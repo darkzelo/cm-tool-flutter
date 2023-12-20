@@ -390,16 +390,17 @@ class _LoginMobileNoFormWidgetState extends State<LoginMobileNoFormWidget> {
               padding: const EdgeInsets.fromLTRB(10, 0, 10, 0),
               child: ElevatedButton(
                   onPressed: () {
-                    if (_formKey.currentState!.validate()) {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => OtpPage(
-                            otpDetail: OtpDetail(mobileNoController.text, ""),
-                          ),
-                        ),
-                      );
-                    }
+                    callRequestOtp(mobileNoController.text);
+                    // if (_formKey.currentState!.validate()) {
+                    //   Navigator.push(
+                    //     context,
+                    //     MaterialPageRoute(
+                    //       builder: (context) => OtpPage(
+                    //         otpDetail: OtpDetail(mobileNoController.text, ""),
+                    //       ),
+                    //     ),
+                    //   );
+                    // }
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.blue,
@@ -409,6 +410,52 @@ class _LoginMobileNoFormWidgetState extends State<LoginMobileNoFormWidget> {
         ],
       ),
     );
+  }
+
+  void callRequestOtp(String mobileNo) async {
+    if (_formKey.currentState!.validate()) {
+      String referenceCode = "";
+      Map data = {"country_code": "+66", "tel": mobileNo};
+      //encode Map to JSON
+      var body = json.encode(data);
+      var url = Uri.https('staging-pos-api.devfullteam.tech',
+          'staff-service/onboard/request-otp');
+      var response = await http.post(url,
+          headers: {"Content-Type": "application/json"}, body: body);
+
+      var statusCode = response.statusCode;
+      var responseBody = response.body;
+      if (statusCode == 200) {
+        final responseBodyObj = json.decode(responseBody);
+
+        if (responseBodyObj["message"] == Constants.SUCCESS) {
+          referenceCode = responseBodyObj["reference_code"];
+          if (referenceCode != "") {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => OtpPage(
+                  otpDetail: OtpDetail(mobileNo, referenceCode),
+                ),
+              ),
+            );
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                  content: Text(Constants.INTERNAL_SERVER_ERROR_MSG)),
+            );
+          }
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text(Constants.INTERNAL_SERVER_ERROR_MSG)),
+          );
+        }
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text(Constants.INTERNAL_SERVER_ERROR_MSG)),
+        );
+      }
+    }
   }
 }
 
@@ -489,6 +536,7 @@ class _OtpFormWidgetState extends State<OtpFormWidget> {
   @override
   Widget build(BuildContext context) {
     OtpFieldController otpController = OtpFieldController();
+    String otpValue = "";
     return Form(
         key: _formKey,
         child: Column(
@@ -497,21 +545,42 @@ class _OtpFormWidgetState extends State<OtpFormWidget> {
               Container(
                 padding: const EdgeInsets.all(10),
                 child: OTPTextField(
-                    controller: otpController,
-                    length: 6,
-                    width: MediaQuery.of(context).size.width,
-                    textFieldAlignment: MainAxisAlignment.spaceAround,
-                    fieldWidth: 45,
-                    fieldStyle: FieldStyle.box,
-                    outlineBorderRadius: 10,
-                    style: TextStyle(fontSize: 17),
-                    onChanged: (pin) {
-                      print("change" + pin);
-                    },
-                    onCompleted: (pin) {
-                      print("complete" + pin);
-                    }),
+                  controller: otpController,
+                  length: 6,
+                  width: MediaQuery.of(context).size.width,
+                  textFieldAlignment: MainAxisAlignment.spaceAround,
+                  fieldWidth: 45,
+                  fieldStyle: FieldStyle.box,
+                  outlineBorderRadius: 10,
+                  style: TextStyle(fontSize: 17),
+                  onChanged: (pin) {
+                    otpValue = pin;
+                  },
+                ),
               ),
+              Container(
+                  height: 50,
+                  width: double.infinity,
+                  margin: const EdgeInsets.fromLTRB(0, 10, 0, 0),
+                  padding: const EdgeInsets.fromLTRB(10, 0, 10, 0),
+                  child: ElevatedButton(
+                      onPressed: () {
+                        if (otpValue.length < 6) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                                content:
+                                    Text("กรุณากรอกหมายเลข OTP ให้ครบถ้วน")),
+                          );
+                        } else {
+                          callRequestOtp(widget.otpDetail.mobileNo,
+                              widget.otpDetail.refCode, otpValue);
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.blue,
+                        foregroundColor: Colors.white,
+                      ),
+                      child: const Text('ตรวจสอบ OTP'))),
               Container(
                   height: 50,
                   width: double.infinity,
@@ -527,5 +596,79 @@ class _OtpFormWidgetState extends State<OtpFormWidget> {
                       ),
                       child: const Text('ส่งรหัสยืนยันอีกครั้ง')))
             ]));
+  }
+
+  void callRequestOtp(String mobileNo, String refCode, String otpCode) async {
+    if (_formKey.currentState!.validate()) {
+      String accessToken = "";
+      Map data = {
+        "client_id": "test",
+        "client_secret": "test",
+        "country_code": "+66",
+        "tel": mobileNo,
+        "reference_code": refCode,
+        "otp_code": otpCode
+      };
+
+      //encode Map to JSON
+      var body = json.encode(data);
+      var url = Uri.https('staging-pos-api.devfullteam.tech',
+          'staff-service/onboard/verify-otp');
+      var response = await http.post(url,
+          headers: {"Content-Type": "application/json"}, body: body);
+
+      var statusCode = response.statusCode;
+      var responseBody = response.body;
+      if (statusCode == 200) {
+        final responseBodyObj = json.decode(responseBody);
+        if (responseBodyObj["access_token"] != "") {
+          var accessToken = responseBodyObj["access_token"];
+          Map data = {
+            "token": accessToken,
+          };
+          //encode Map to JSON
+          var body = json.encode(data);
+          var url = Uri.https(
+              Constants.API_ENDPOINT, 'staff-service/user/save-auth-session');
+
+          var response = await http.post(url,
+              headers: {
+                "Content-Type": "application/json",
+                'Authorization': 'Bearer $accessToken'
+              },
+              body: body);
+
+          var statusCode = response.statusCode;
+          var responseBody = response.body;
+          if (statusCode == 200) {
+            final responseBodyObj = json.decode(responseBody);
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) =>
+                    WebViewPage(token: Token(responseBodyObj["session_id"])),
+              ),
+            );
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text(Constants.USER_NOT_FOUND)),
+            );
+          }
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text(Constants.USER_NOT_FOUND)),
+          );
+        }
+      } else if (statusCode == 400) {
+        final responseBodyObj = json.decode(responseBody);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(responseBodyObj["detail"])),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text(Constants.INTERNAL_SERVER_ERROR_MSG)),
+        );
+      }
+    }
   }
 }
