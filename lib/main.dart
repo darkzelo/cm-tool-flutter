@@ -225,7 +225,10 @@ class _LoginUsernameFormWidgetState extends State<LoginUsernameFormWidget> {
             );
           } else {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Incorrect username or password')),
+              const SnackBar(
+                content: Text(Constants.INCORRECT_USERNAME_OR_PASSWORD),
+                backgroundColor: Colors.orange,
+              ),
             );
           }
 
@@ -239,12 +242,18 @@ class _LoginUsernameFormWidgetState extends State<LoginUsernameFormWidget> {
           // );
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Incorrect username or password')),
+            const SnackBar(
+              content: Text(Constants.INCORRECT_USERNAME_OR_PASSWORD),
+              backgroundColor: Colors.orange,
+            ),
           );
         }
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Incorrect username or password')),
+          const SnackBar(
+            content: Text(Constants.INCORRECT_USERNAME_OR_PASSWORD),
+            backgroundColor: Colors.orange,
+          ),
         );
       }
     }
@@ -276,10 +285,29 @@ class WebViewPage extends StatelessWidget {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => HomePage(),
+          showDialog<String>(
+            context: context,
+            builder: (BuildContext context) => AlertDialog(
+              title: const Text('คุณต้องการออกจากระบบใช่หรือไม่?'),
+              // content: const Text('AlertDialog description'),
+              actions: <Widget>[
+                TextButton(
+                  onPressed: () => {Navigator.pop(context, 'Cancel')},
+                  child: const Text('ยกเลิก'),
+                ),
+                TextButton(
+                  onPressed: () => {
+                    // Navigator.pop(context, 'OK')
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => HomePage(),
+                      ),
+                    )
+                  },
+                  child: const Text('ยืนยัน'),
+                ),
+              ],
             ),
           )
         },
@@ -459,14 +487,21 @@ class _LoginMobileNoFormWidgetState extends State<LoginMobileNoFormWidget> {
   }
 }
 
-class OtpPage extends StatelessWidget {
+class OtpPage extends StatefulWidget {
   const OtpPage({super.key, required this.otpDetail});
   final OtpDetail otpDetail;
 
   @override
+  State<OtpPage> createState() => _OtpPageState();
+}
+
+class _OtpPageState extends State<OtpPage> {
+  @override
   Widget build(BuildContext context) {
-    String mobileNo = otpDetail.mobileNo;
-    String refCode = otpDetail.refCode;
+    String mobileNo = widget.otpDetail.mobileNo;
+    String refCode = widget.otpDetail.refCode;
+    OtpFieldController otpController = OtpFieldController();
+    String otpValue = "";
     return Scaffold(
       appBar: AppBar(
         title: const Text("App Manager"),
@@ -516,12 +551,76 @@ class OtpPage extends StatelessWidget {
                 alignment: Alignment.center,
                 padding: const EdgeInsets.all(10),
                 child: OtpFormWidget(
-                  otpDetail: OtpDetail(otpDetail.mobileNo, otpDetail.refCode),
+                  otpDetail: OtpDetail(mobileNo, refCode),
                 ))
           ])),
     );
   }
 }
+
+// class OtpPage extends StatelessWidget {
+//   const OtpPage({super.key, required this.otpDetail});
+//   final OtpDetail otpDetail;
+
+//   @override
+//   Widget build(BuildContext context) {
+//     String mobileNo = otpDetail.mobileNo;
+//     String refCode = otpDetail.refCode;
+//     return Scaffold(
+//       appBar: AppBar(
+//         title: const Text("App Manager"),
+//       ),
+//       body: Padding(
+//           padding: const EdgeInsets.all(10),
+//           child: ListView(children: <Widget>[
+//             Container(
+//                 alignment: Alignment.center,
+//                 padding: const EdgeInsets.all(10),
+//                 child: const Text(
+//                   Constants.PAGE_HEADER,
+//                   style: TextStyle(
+//                       color: Colors.blue,
+//                       fontWeight: FontWeight.w500,
+//                       fontSize: 30),
+//                 )),
+//             Container(
+//                 alignment: Alignment.center,
+//                 padding: const EdgeInsets.all(10),
+//                 child: const Text(
+//                   'ยืนยันรหัส OTP',
+//                   style: TextStyle(
+//                       color: Colors.black,
+//                       fontWeight: FontWeight.w500,
+//                       fontSize: 20),
+//                 )),
+//             Container(
+//                 alignment: Alignment.center,
+//                 child: Text(
+//                   'รหัสยืนยันส่งไปที่ +66$mobileNo',
+//                   style: const TextStyle(
+//                       color: Colors.grey,
+//                       fontWeight: FontWeight.w400,
+//                       fontSize: 15),
+//                 )),
+//             Container(
+//                 alignment: Alignment.center,
+//                 child: Text(
+//                   'Ref Code: $refCode',
+//                   style: const TextStyle(
+//                       color: Colors.grey,
+//                       fontWeight: FontWeight.w400,
+//                       fontSize: 15),
+//                 )),
+//             Container(
+//                 alignment: Alignment.center,
+//                 padding: const EdgeInsets.all(10),
+//                 child: OtpFormWidget(
+//                   otpDetail: OtpDetail(otpDetail.mobileNo, otpDetail.refCode),
+//                 ))
+//           ])),
+//     );
+//   }
+// }
 
 class OtpFormWidget extends StatefulWidget {
   const OtpFormWidget({super.key, required this.otpDetail});
@@ -568,8 +667,9 @@ class _OtpFormWidgetState extends State<OtpFormWidget> {
                         if (otpValue.length < 6) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
-                                content:
-                                    Text("กรุณากรอกหมายเลข OTP ให้ครบถ้วน")),
+                              content: Text("กรุณากรอกหมายเลข OTP ให้ครบถ้วน"),
+                              backgroundColor: Colors.orange,
+                            ),
                           );
                         } else {
                           callRequestOtp(widget.otpDetail.mobileNo,
@@ -651,18 +751,27 @@ class _OtpFormWidgetState extends State<OtpFormWidget> {
             );
           } else {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text(Constants.USER_NOT_FOUND)),
+              const SnackBar(
+                content: Text(Constants.USER_NOT_FOUND),
+                backgroundColor: Colors.orange,
+              ),
             );
           }
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text(Constants.USER_NOT_FOUND)),
+            const SnackBar(
+              content: Text(Constants.USER_NOT_FOUND),
+              backgroundColor: Colors.orange,
+            ),
           );
         }
       } else if (statusCode == 400) {
         final responseBodyObj = json.decode(responseBody);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(responseBodyObj["detail"])),
+          SnackBar(
+            content: Text(responseBodyObj["detail"]),
+            backgroundColor: Colors.orange,
+          ),
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
