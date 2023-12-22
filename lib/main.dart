@@ -496,10 +496,19 @@ class OtpPage extends StatefulWidget {
 }
 
 class _OtpPageState extends State<OtpPage> {
+  final _formKey = GlobalKey<FormState>();
+  String mobileNo = "";
+  String refCode = "";
+
+  @override
+  void initState() {
+    mobileNo = widget.otpDetail.mobileNo;
+    refCode = widget.otpDetail.refCode;
+    super.initState();
+  }
+
   @override
   Widget build(BuildContext context) {
-    String mobileNo = widget.otpDetail.mobileNo;
-    String refCode = widget.otpDetail.refCode;
     OtpFieldController otpController = OtpFieldController();
     String otpValue = "";
     return Scaffold(
@@ -550,152 +559,76 @@ class _OtpPageState extends State<OtpPage> {
             Container(
                 alignment: Alignment.center,
                 padding: const EdgeInsets.all(10),
-                child: OtpFormWidget(
-                  otpDetail: OtpDetail(mobileNo, refCode),
-                ))
+                child: Form(
+                    key: _formKey,
+                    child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: <Widget>[
+                          Container(
+                            padding: const EdgeInsets.all(10),
+                            child: OTPTextField(
+                              controller: otpController,
+                              length: 6,
+                              width: MediaQuery.of(context).size.width,
+                              textFieldAlignment: MainAxisAlignment.spaceAround,
+                              fieldWidth: 45,
+                              fieldStyle: FieldStyle.box,
+                              outlineBorderRadius: 10,
+                              style: TextStyle(fontSize: 17),
+                              onChanged: (pin) {
+                                otpValue = pin;
+                              },
+                            ),
+                          ),
+                          Container(
+                              height: 50,
+                              width: double.infinity,
+                              margin: const EdgeInsets.fromLTRB(0, 10, 0, 0),
+                              padding: const EdgeInsets.fromLTRB(10, 0, 10, 0),
+                              child: ElevatedButton(
+                                  onPressed: () {
+                                    if (otpValue.length < 6) {
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(
+                                        const SnackBar(
+                                          content: Text(
+                                              "กรุณากรอกหมายเลข OTP ให้ครบถ้วน"),
+                                          backgroundColor: Colors.orange,
+                                        ),
+                                      );
+                                    } else {
+                                      callRequestOtp(
+                                          mobileNo, refCode, otpValue);
+                                    }
+                                  },
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.blue,
+                                    foregroundColor: Colors.white,
+                                  ),
+                                  child: const Text('ตรวจสอบ OTP'))),
+                          Container(
+                              height: 50,
+                              width: double.infinity,
+                              margin: const EdgeInsets.fromLTRB(0, 10, 0, 0),
+                              padding: const EdgeInsets.fromLTRB(10, 0, 10, 0),
+                              child: ElevatedButton(
+                                  onPressed: () async {
+                                    callResendOtp(mobileNo).then((value) {
+                                      if (value != "") {
+                                        setState(() {
+                                          refCode = value;
+                                        });
+                                      }
+                                    });
+                                  },
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.white,
+                                    foregroundColor: Colors.blue,
+                                  ),
+                                  child: const Text('ส่งรหัสยืนยันอีกครั้ง'))),
+                        ])))
           ])),
     );
-  }
-}
-
-// class OtpPage extends StatelessWidget {
-//   const OtpPage({super.key, required this.otpDetail});
-//   final OtpDetail otpDetail;
-
-//   @override
-//   Widget build(BuildContext context) {
-//     String mobileNo = otpDetail.mobileNo;
-//     String refCode = otpDetail.refCode;
-//     return Scaffold(
-//       appBar: AppBar(
-//         title: const Text("App Manager"),
-//       ),
-//       body: Padding(
-//           padding: const EdgeInsets.all(10),
-//           child: ListView(children: <Widget>[
-//             Container(
-//                 alignment: Alignment.center,
-//                 padding: const EdgeInsets.all(10),
-//                 child: const Text(
-//                   Constants.PAGE_HEADER,
-//                   style: TextStyle(
-//                       color: Colors.blue,
-//                       fontWeight: FontWeight.w500,
-//                       fontSize: 30),
-//                 )),
-//             Container(
-//                 alignment: Alignment.center,
-//                 padding: const EdgeInsets.all(10),
-//                 child: const Text(
-//                   'ยืนยันรหัส OTP',
-//                   style: TextStyle(
-//                       color: Colors.black,
-//                       fontWeight: FontWeight.w500,
-//                       fontSize: 20),
-//                 )),
-//             Container(
-//                 alignment: Alignment.center,
-//                 child: Text(
-//                   'รหัสยืนยันส่งไปที่ +66$mobileNo',
-//                   style: const TextStyle(
-//                       color: Colors.grey,
-//                       fontWeight: FontWeight.w400,
-//                       fontSize: 15),
-//                 )),
-//             Container(
-//                 alignment: Alignment.center,
-//                 child: Text(
-//                   'Ref Code: $refCode',
-//                   style: const TextStyle(
-//                       color: Colors.grey,
-//                       fontWeight: FontWeight.w400,
-//                       fontSize: 15),
-//                 )),
-//             Container(
-//                 alignment: Alignment.center,
-//                 padding: const EdgeInsets.all(10),
-//                 child: OtpFormWidget(
-//                   otpDetail: OtpDetail(otpDetail.mobileNo, otpDetail.refCode),
-//                 ))
-//           ])),
-//     );
-//   }
-// }
-
-class OtpFormWidget extends StatefulWidget {
-  const OtpFormWidget({super.key, required this.otpDetail});
-  final OtpDetail otpDetail;
-
-  @override
-  State<OtpFormWidget> createState() => _OtpFormWidgetState();
-}
-
-class _OtpFormWidgetState extends State<OtpFormWidget> {
-  final _formKey = GlobalKey<FormState>();
-  @override
-  Widget build(BuildContext context) {
-    OtpFieldController otpController = OtpFieldController();
-    String otpValue = "";
-    return Form(
-        key: _formKey,
-        child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Container(
-                padding: const EdgeInsets.all(10),
-                child: OTPTextField(
-                  controller: otpController,
-                  length: 6,
-                  width: MediaQuery.of(context).size.width,
-                  textFieldAlignment: MainAxisAlignment.spaceAround,
-                  fieldWidth: 45,
-                  fieldStyle: FieldStyle.box,
-                  outlineBorderRadius: 10,
-                  style: TextStyle(fontSize: 17),
-                  onChanged: (pin) {
-                    otpValue = pin;
-                  },
-                ),
-              ),
-              Container(
-                  height: 50,
-                  width: double.infinity,
-                  margin: const EdgeInsets.fromLTRB(0, 10, 0, 0),
-                  padding: const EdgeInsets.fromLTRB(10, 0, 10, 0),
-                  child: ElevatedButton(
-                      onPressed: () {
-                        if (otpValue.length < 6) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text("กรุณากรอกหมายเลข OTP ให้ครบถ้วน"),
-                              backgroundColor: Colors.orange,
-                            ),
-                          );
-                        } else {
-                          callRequestOtp(widget.otpDetail.mobileNo,
-                              widget.otpDetail.refCode, otpValue);
-                        }
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blue,
-                        foregroundColor: Colors.white,
-                      ),
-                      child: const Text('ตรวจสอบ OTP'))),
-              Container(
-                  height: 50,
-                  width: double.infinity,
-                  margin: const EdgeInsets.fromLTRB(0, 10, 0, 0),
-                  padding: const EdgeInsets.fromLTRB(10, 0, 10, 0),
-                  child: ElevatedButton(
-                      onPressed: () {
-                        print("Resend OTP");
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.white,
-                        foregroundColor: Colors.blue,
-                      ),
-                      child: const Text('ส่งรหัสยืนยันอีกครั้ง')))
-            ]));
   }
 
   void callRequestOtp(String mobileNo, String refCode, String otpCode) async {
@@ -779,5 +712,42 @@ class _OtpFormWidgetState extends State<OtpFormWidget> {
         );
       }
     }
+  }
+
+  Future<String> callResendOtp(String mobileNo) async {
+    String referenceCode = "";
+    Map data = {"country_code": "+66", "tel": mobileNo};
+    //encode Map to JSON
+    var body = json.encode(data);
+    var url = Uri.https('staging-pos-api.devfullteam.tech',
+        'staff-service/onboard/request-otp');
+    var response = await http.post(url,
+        headers: {"Content-Type": "application/json"}, body: body);
+
+    var statusCode = response.statusCode;
+    var responseBody = response.body;
+    if (statusCode == 200) {
+      final responseBodyObj = json.decode(responseBody);
+
+      if (responseBodyObj["message"] == Constants.SUCCESS) {
+        referenceCode = responseBodyObj["reference_code"];
+        if (referenceCode != "") {
+          return referenceCode;
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text(Constants.INTERNAL_SERVER_ERROR_MSG)),
+          );
+        }
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text(Constants.INTERNAL_SERVER_ERROR_MSG)),
+        );
+      }
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text(Constants.INTERNAL_SERVER_ERROR_MSG)),
+      );
+    }
+    return "";
   }
 }
