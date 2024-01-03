@@ -298,6 +298,38 @@ class WebViewPage extends StatelessWidget {
       appBar: AppBar(
         title: const Text("CM Tool Management"),
         automaticallyImplyLeading: false,
+        actions: <Widget>[
+          TextButton(
+            onPressed: () => {
+              showDialog<String>(
+                context: context,
+                builder: (BuildContext context) => AlertDialog(
+                  title: const Text('คุณต้องการออกจากระบบใช่หรือไม่?'),
+                  // content: const Text('AlertDialog description'),
+                  actions: <Widget>[
+                    TextButton(
+                      onPressed: () => {Navigator.pop(context, 'Cancel')},
+                      child: const Text('ยกเลิก'),
+                    ),
+                    TextButton(
+                      onPressed: () => {
+                        // Navigator.pop(context, 'OK')
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => HomePage(),
+                          ),
+                        )
+                      },
+                      child: const Text('ยืนยัน'),
+                    ),
+                  ],
+                ),
+              )
+            },
+            child: const Icon(Icons.logout),
+          ),
+        ],
       ),
       body: WebView(
         zoomEnabled: false,
@@ -306,36 +338,6 @@ class WebViewPage extends StatelessWidget {
         onWebViewCreated: (WebViewController webViewController) {
           _controller = webViewController;
         },
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => {
-          showDialog<String>(
-            context: context,
-            builder: (BuildContext context) => AlertDialog(
-              title: const Text('คุณต้องการออกจากระบบใช่หรือไม่?'),
-              // content: const Text('AlertDialog description'),
-              actions: <Widget>[
-                TextButton(
-                  onPressed: () => {Navigator.pop(context, 'Cancel')},
-                  child: const Text('ยกเลิก'),
-                ),
-                TextButton(
-                  onPressed: () => {
-                    // Navigator.pop(context, 'OK')
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => HomePage(),
-                      ),
-                    )
-                  },
-                  child: const Text('ยืนยัน'),
-                ),
-              ],
-            ),
-          )
-        },
-        child: const Icon(Icons.logout),
       ),
     );
   }
