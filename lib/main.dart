@@ -8,6 +8,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:otp_text_field/otp_text_field.dart';
 import 'constants.dart' as Constants;
+import 'package:url_launcher/url_launcher.dart';
 
 void main() {
   runApp(const MaterialApp(
@@ -93,6 +94,29 @@ class LoginUsernamePage extends StatelessWidget {
                     );
                   },
                 )),
+            Container(
+              alignment: Alignment.center,
+              padding: const EdgeInsets.all(10),
+              child: InkWell(
+                onTap: () async {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => ForgotPasswordPage(),
+                    ),
+                  );
+                },
+                child: const Text(
+                  Constants.FORGOT_PASSWORD,
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: Colors.blue,
+                    decoration: TextDecoration.underline,
+                    decorationColor: Colors.blue,
+                  ),
+                ),
+              ),
+            ),
           ],
         ));
   }
@@ -749,5 +773,171 @@ class _OtpPageState extends State<OtpPage> {
       );
     }
     return "";
+  }
+}
+
+class ForgotPasswordPage extends StatelessWidget {
+  const ForgotPasswordPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+        appBar: AppBar(
+          title: const Text("App Manager"),
+        ),
+        body: Padding(
+            padding: const EdgeInsets.all(10),
+            child: ListView(children: <Widget>[
+              Container(
+                  alignment: Alignment.center,
+                  padding: const EdgeInsets.all(10),
+                  child: const Text(
+                    Constants.PAGE_HEADER,
+                    style: TextStyle(
+                        color: Colors.blue,
+                        fontWeight: FontWeight.w500,
+                        fontSize: 30),
+                  )),
+              Container(
+                  alignment: Alignment.center,
+                  padding: const EdgeInsets.all(10),
+                  child: const Text(
+                    "กรอกอีเมลเพื่อขอตั้งรหัสผ่านใหม่",
+                    style: TextStyle(fontSize: 20),
+                  )),
+              Container(
+                  alignment: Alignment.center,
+                  padding: const EdgeInsets.all(10),
+                  child: ForgotPasswordWidget()),
+              Container(
+                alignment: Alignment.center,
+                padding: const EdgeInsets.all(10),
+                child: InkWell(
+                  onTap: () async {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => HomePage(),
+                      ),
+                    );
+                  },
+                  child: const Text(
+                    "กลับไปหน้าลงชื่อเข้าใช้",
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: Colors.blue,
+                    ),
+                  ),
+                ),
+              ),
+            ])));
+  }
+}
+
+class ForgotPasswordWidget extends StatefulWidget {
+  const ForgotPasswordWidget({super.key});
+
+  @override
+  State<ForgotPasswordWidget> createState() => _ForgotPasswordWidgetState();
+}
+
+class _ForgotPasswordWidgetState extends State<ForgotPasswordWidget> {
+  final _formKey = GlobalKey<FormState>();
+  Widget build(BuildContext context) {
+    TextEditingController emailController = TextEditingController();
+    return Form(
+      key: _formKey,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Container(
+              padding: const EdgeInsets.all(10),
+              child: TextFormField(
+                controller: emailController,
+                keyboardType: TextInputType.emailAddress,
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'กรุณากรอกอีเมล';
+                  }
+                  return null;
+                },
+                decoration: const InputDecoration(
+                  border: OutlineInputBorder(),
+                  labelText: 'อีเมล',
+                ),
+              )),
+          Container(
+              height: 50,
+              width: double.infinity,
+              margin: const EdgeInsets.fromLTRB(0, 10, 0, 0),
+              padding: const EdgeInsets.fromLTRB(10, 0, 10, 0),
+              child: ElevatedButton(
+                  onPressed: () {
+                    callForgotPassword(emailController.text);
+                    // if (_formKey.currentState!.validate()) {
+                    //   Navigator.push(
+                    //     context,
+                    //     MaterialPageRoute(
+                    //       builder: (context) => OtpPage(
+                    //         otpDetail: OtpDetail(mobileNoController.text, ""),
+                    //       ),
+                    //     ),
+                    //   );
+                    // }
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blue,
+                    foregroundColor: Colors.white,
+                  ),
+                  child: const Text('ยืนยัน')))
+        ],
+      ),
+    );
+  }
+
+  void callForgotPassword(String email) async {
+    if (_formKey.currentState!.validate()) {
+      Map data = {"email": email};
+      //encode Map to JSON
+      var body = json.encode(data);
+      var url = Uri.https('staging-pos-api.devfullteam.tech',
+          'staff-service/staff/send-forgot-password');
+      var response = await http.post(url,
+          headers: {"Content-Type": "application/json"}, body: body);
+
+      var statusCode = response.statusCode;
+      var responseBody = response.body;
+      if (statusCode == 200) {
+        final responseBodyObj = json.decode(responseBody);
+        String message = responseBodyObj["message"];
+        if (message == Constants.SUCCESS) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(Constants.SUCCESS_TH),
+              backgroundColor: Colors.green,
+            ),
+          );
+          Future.delayed(Duration(seconds: 1), () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => HomePage(),
+              ),
+            );
+          });
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(Constants.INVALID_EMAIL),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        }
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text(Constants.INTERNAL_SERVER_ERROR_MSG)),
+        );
+      }
+    }
   }
 }

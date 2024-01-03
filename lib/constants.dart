@@ -7,6 +7,9 @@ const String SUCCESS = "success";
 const String USER_NOT_FOUND = "ไม่พบผู้ใช้ในระบบ";
 const String INCORRECT_USERNAME_OR_PASSWORD =
     "อีเมล หรือรหัสผ่านไม่ถูกต้อง กรุณาลองอีกครั้ง";
+const String FORGOT_PASSWORD = "ลืมรหัสผ่าน";
+const String INVALID_EMAIL = "อีเมลไม่ถูกต้อง";
+const String SUCCESS_TH = "สำเร็จ";
 
 const String API_ENDPOINT = "staging-pos-api.devfullteam.tech";
 const String WEBVIEW_ENDPOINT = "https://staging-eazypos-cms.devfullteam.tech";
